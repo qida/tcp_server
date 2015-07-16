@@ -42,7 +42,7 @@ func (c *Client) Send(message string) error {
 	return err
 }
 // Get conn
-func (c *Client) GetConn() {
+func (c *Client) GetConn() net.Conn {
 	return c.conn
 }
 // Called right after server starts listening new client
