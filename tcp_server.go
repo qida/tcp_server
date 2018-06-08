@@ -8,7 +8,11 @@ import (
 
 // Client holds info about connection
 type Client struct {
+<<<<<<< HEAD
 	Id       int
+=======
+	Id	 int
+>>>>>>> b8c0123196db89307adce8e342ef8df043fec533
 	conn     net.Conn
 	Server   *server
 	incoming chan string // Channel for incoming data from client
