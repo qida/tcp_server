@@ -8,6 +8,7 @@ import (
 
 // Client holds info about connection
 type Client struct {
+	Id       int
 	conn     net.Conn
 	Server   *server
 	incoming chan string // Channel for incoming data from client
@@ -38,13 +39,15 @@ func (c *Client) listen() {
 }
 
 func (c *Client) Send(message string) error {
-	_, err := c.conn.Write([]byte(message))
+	_, err := c.conn.Write([]byte(message + "\n"))
 	return err
 }
+
 // Get conn
 func (c *Client) GetConn() net.Conn {
 	return c.conn
 }
+
 // Called right after server starts listening new client
 func (s *server) OnNewClient(callback func(c *Client)) {
 	s.onNewClientCallback = callback
