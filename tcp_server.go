@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"time"
+
+	"github.com/felixge/tcpkeepalive"
 )
 
 // Client holds info about connection
@@ -95,7 +98,12 @@ func (s *server) Listen() {
 
 	for {
 		conn, _ := listener.Accept()
-		s.joins <- conn
+		kaConn, _ := tcpkeepalive.EnableKeepAlive(conn)
+		kaConn.SetKeepAliveIdle(30 * time.Second)
+		kaConn.SetKeepAliveCount(4)
+		kaConn.SetKeepAliveInterval(5 * time.Second)
+		// s.joins <- conn
+		s.joins <- kaConn
 	}
 }
 
@@ -106,7 +114,6 @@ func New(address string) *server {
 		address: address,
 		joins:   make(chan net.Conn),
 	}
-
 	server.OnNewClient(func(c *Client) {})
 	server.OnNewMessage(func(c *Client, message string) {})
 	server.OnClientConnectionClosed(func(c *Client, err error) {})
