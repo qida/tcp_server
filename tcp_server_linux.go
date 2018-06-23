@@ -25,7 +25,6 @@ func (s *server) Listen() {
 		kaConn.SetKeepAliveIdle(30 * time.Second)
 		kaConn.SetKeepAliveCount(4)
 		kaConn.SetKeepAliveInterval(5 * time.Second)
-		// s.joins <- conn
 		s.joins <- kaConn
 	}
 }

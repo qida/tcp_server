@@ -6,7 +6,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/felixge/tcpkeepalive"
 )
 
 // Client holds info about connection
