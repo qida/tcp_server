@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"log"
 	"net"
-	"time"
-
 )
 
 // Client holds info about connection
