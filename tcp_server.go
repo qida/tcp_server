@@ -106,9 +106,7 @@ func (s *server) newClient(conn net.Conn) {
 		Server: s,
 	}
 	go client.listen()
-	if s.IsReplay {
-		go client.replay()
-	}
+	go client.replay()
 	s.onNewClientCallback(client)
 }
 
