@@ -57,7 +57,8 @@ func (c *Client) replay() {
 			c.conn_replay, err = net.Dial("tcp", REPLAY_HOST)
 			if err != nil {
 				fmt.Println(err.Error())
-				return
+				c.conn_replay = nil
+				break
 			}
 			c.conn_replay.Write([]byte(msg))
 			fmt.Printf("转发 %s\r\n", msg)
