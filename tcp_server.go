@@ -3,7 +3,6 @@ package tcp_server
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
 )
@@ -53,7 +52,6 @@ func (c *Client) replay() {
 	for {
 		fmt.Println("replay start")
 		msg := <-c.incoming
-		fmt.Println("=====REPLAY=====")
 		if c.conn_replay == nil {
 			var err error
 			c.conn_replay, err = net.Dial("tcp", REPLAY_HOST)
@@ -61,14 +59,15 @@ func (c *Client) replay() {
 				fmt.Println(err.Error())
 				return
 			}
+			c.conn_replay.Write([]byte(msg))
+			fmt.Printf("转发 %s\r\n", msg)
+			fmt.Println("================")
 		}
-		_, err := io.Copy(c.conn_replay, c.conn)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		fmt.Printf("转发 %s\r\n", msg)
-		fmt.Println("================")
+		// _, err := io.Copy(c.conn_replay, c.conn)
+		// if err != nil {
+		// 	fmt.Println(err.Error())
+		// 	return
+		// }
 	}
 }
 
