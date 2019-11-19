@@ -24,7 +24,6 @@ type Client struct {
 type server struct {
 	clients                  []*Client
 	address                  string        // Address to open connection: localhost:9999
-	IsReplay                 bool          // Address to open connection: localhost:9999
 	joins                    chan net.Conn // Channel for new connections
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
