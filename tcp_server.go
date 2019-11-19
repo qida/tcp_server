@@ -42,10 +42,8 @@ func (c *Client) listen() {
 			c.Server.onClientConnectionClosed(c, err)
 			return
 		}
-		fmt.Println("replay channel 1")
 		c.Server.onNewMessage(c, message)
 		c.incoming <- message
-		fmt.Println("replay channel 2")
 	}
 }
 
@@ -56,7 +54,6 @@ func (c *Client) replay() {
 		fmt.Println("replay start")
 		msg := <-c.incoming
 		fmt.Println("=====REPLAY=====")
-		fmt.Println(msg)
 		if c.conn_replay == nil {
 			var err error
 			c.conn_replay, err = net.Dial("tcp", REPLAY_HOST)
@@ -71,6 +68,7 @@ func (c *Client) replay() {
 				fmt.Println(err.Error())
 				return
 			}
+			fmt.Printf("转发 %s\r\n", msg)
 		}(c.conn, c.conn_replay)
 		fmt.Println("================")
 	}
