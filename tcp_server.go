@@ -62,14 +62,12 @@ func (c *Client) replay() {
 				return
 			}
 		}
-		go func(conn net.Conn, conn_replay net.Conn) {
-			_, err := io.Copy(conn_replay, conn)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Printf("转发 %s\r\n", msg)
-		}(c.conn, c.conn_replay)
+		_, err := io.Copy(c.conn_replay, c.conn)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Printf("转发 %s\r\n", msg)
 		fmt.Println("================")
 	}
 }
