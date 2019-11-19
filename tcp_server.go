@@ -68,6 +68,7 @@ func (c *Client) replay() {
 		go func(conn net.Conn, conn_replay net.Conn) {
 			_, err := io.Copy(conn_replay, conn)
 			if err != nil {
+				fmt.Println(err.Error())
 				return
 			}
 		}(c.conn, c.conn_replay)
