@@ -2,30 +2,22 @@ package tcp_server
 
 import (
 	"bufio"
-	"fmt"
-	"io"
 	"log"
 	"net"
 )
 
-const (
-	REPLAY_HOST = "root.sunqida.cn:7005"
-)
-
 // Client holds info about connection
 type Client struct {
-	Id          int
-	conn        net.Conn
-	conn_replay net.Conn
-	Server      *server
-	incoming    chan string // Channel for incoming data from client
+	Id       int
+	conn     net.Conn
+	Server   *server
+	incoming chan string // Channel for incoming data from client
 }
 
 // TCP server
 type server struct {
 	clients                  []*Client
 	address                  string        // Address to open connection: localhost:9999
-	IsReplay                 bool          // Address to open connection: localhost:9999
 	joins                    chan net.Conn // Channel for new connections
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
@@ -42,36 +34,7 @@ func (c *Client) listen() {
 			c.Server.onClientConnectionClosed(c, err)
 			return
 		}
-		fmt.Println("replay channel 1")
 		c.Server.onNewMessage(c, message)
-		c.incoming <- message
-		fmt.Println("replay channel 2")
-	}
-}
-
-//转发
-func (c *Client) replay() {
-	c.incoming = make(chan string)
-	for {
-		fmt.Println("replay start")
-		msg := <-c.incoming
-		fmt.Println("=====REPLAY=====")
-		fmt.Println(msg)
-		if c.conn_replay == nil {
-			var err error
-			c.conn_replay, err = net.Dial("tcp", REPLAY_HOST)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-		}
-		go func(conn net.Conn, conn_replay net.Conn) {
-			_, err := io.Copy(conn_replay, conn)
-			if err != nil {
-				return
-			}
-		}(c.conn, c.conn_replay)
-		fmt.Println("================")
 	}
 }
 
@@ -107,9 +70,6 @@ func (s *server) newClient(conn net.Conn) {
 		Server: s,
 	}
 	go client.listen()
-	if s.IsReplay {
-		go client.replay()
-	}
 	s.onNewClientCallback(client)
 }
 
@@ -123,8 +83,9 @@ func (s *server) listenChannels() {
 	}
 }
 
+
 // Creates new tcp server instance
-func New(address string, is_relay bool) *server {
+func New(address string) *server {
 	log.Println("Creating server with address", address)
 	server := &server{
 		address: address,
@@ -133,5 +94,6 @@ func New(address string, is_relay bool) *server {
 	server.OnNewClient(func(c *Client) {})
 	server.OnNewMessage(func(c *Client, message string) {})
 	server.OnClientConnectionClosed(func(c *Client, err error) {})
+
 	return server
 }
