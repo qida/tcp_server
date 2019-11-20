@@ -2,6 +2,7 @@ package tcp_server
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 )
@@ -43,10 +44,13 @@ func (c *Client) listen() {
 				var err error
 				c.Replay, err = net.Dial("tcp", c.Server.replay)
 				if err != nil {
+					fmt.Println(err.Error())
 					return
 				}
 			}
-			c.Replay.Write([]byte(message))
+			if c.Replay != nil {
+				c.Replay.Write([]byte(message))
+			}
 		}()
 	}
 }
