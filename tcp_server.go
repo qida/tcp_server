@@ -2,22 +2,17 @@ package tcp_server
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 )
 
-const (
-	REPLAY_HOST = "root.sunqida.cn:7005"
-)
-
 // Client holds info about connection
 type Client struct {
-	Id          int
-	conn        net.Conn
-	conn_replay net.Conn
-	Server      *server
-	incoming    chan string // Channel for incoming data from client
+	Id       int
+	Conn     net.Conn
+	Replay   net.Conn
+	Server   *server
+	incoming chan string // Channel for incoming data from client
 }
 
 // TCP server
@@ -28,57 +23,32 @@ type server struct {
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
 	onNewMessage             func(c *Client, message string)
+	onReplayMessage          func(c *Client, message string)
 }
 
 // Read client data from channel
 func (c *Client) listen() {
-	reader := bufio.NewReader(c.conn)
+	reader := bufio.NewReader(c.Conn)
 	for {
 		message, err := reader.ReadString('\n')
 		if err != nil {
-			c.conn.Close()
+			c.Conn.Close()
 			c.Server.onClientConnectionClosed(c, err)
 			return
 		}
 		c.Server.onNewMessage(c, message)
-		c.incoming <- message
-	}
-}
-
-//转发
-func (c *Client) replay() {
-	c.incoming = make(chan string)
-	for {
-		fmt.Println("replay start")
-		msg := <-c.incoming
-		if c.conn_replay == nil {
-			var err error
-			c.conn_replay, err = net.Dial("tcp", REPLAY_HOST)
-			if err != nil {
-				fmt.Println(err.Error())
-				c.conn_replay = nil
-				break
-			}
-			c.conn_replay.Write([]byte(msg))
-			fmt.Printf("转发 %s\r\n", msg)
-			fmt.Println("================")
-		}
-		// _, err := io.Copy(c.conn_replay, c.conn)
-		// if err != nil {
-		// 	fmt.Println(err.Error())
-		// 	return
-		// }
+		c.Server.onReplayMessage(c, message)
 	}
 }
 
 func (c *Client) Send(message string) error {
-	_, err := c.conn.Write([]byte(message + "\n"))
+	_, err := c.Conn.Write([]byte(message + "\n"))
 	return err
 }
 
-// Get conn
+// Get Conn
 func (c *Client) GetConn() net.Conn {
-	return c.conn
+	return c.Conn
 }
 
 // Called right after server starts listening new client
@@ -96,14 +66,17 @@ func (s *server) OnNewMessage(callback func(c *Client, message string)) {
 	s.onNewMessage = callback
 }
 
+func (s *server) OnReplayMessage(callback func(c *Client, message string)) {
+	s.onReplayMessage = callback
+}
+
 // Creates new Client instance and starts listening
-func (s *server) newClient(conn net.Conn) {
+func (s *server) newClient(Conn net.Conn) {
 	client := &Client{
-		conn:   conn,
+		Conn:   Conn,
 		Server: s,
 	}
 	go client.listen()
-	// go client.replay()
 	s.onNewClientCallback(client)
 }
 
@@ -111,14 +84,14 @@ func (s *server) newClient(conn net.Conn) {
 func (s *server) listenChannels() {
 	for {
 		select {
-		case conn := <-s.joins:
-			s.newClient(conn)
+		case Conn := <-s.joins:
+			s.newClient(Conn)
 		}
 	}
 }
 
 // Creates new tcp server instance
-func New(address string, is_relay bool) *server {
+func New(address string) *server {
 	log.Println("Creating server with address", address)
 	server := &server{
 		address: address,
@@ -126,6 +99,7 @@ func New(address string, is_relay bool) *server {
 	}
 	server.OnNewClient(func(c *Client) {})
 	server.OnNewMessage(func(c *Client, message string) {})
+	server.OnReplayMessage(func(c *Client, message string) {})
 	server.OnClientConnectionClosed(func(c *Client, err error) {})
 	return server
 }
