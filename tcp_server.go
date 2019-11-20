@@ -106,7 +106,7 @@ func (s *server) listenChannels() {
 
 // Creates new tcp server instance
 func New(address string, replay string) *server {
-	log.Println("Creating server with address", address)
+	log.Println("Creating TCP :", address)
 	server := &server{
 		address: address,
 		replay:  replay,
