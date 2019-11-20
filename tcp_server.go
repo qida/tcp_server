@@ -19,6 +19,7 @@ type Client struct {
 type server struct {
 	clients                  []*Client
 	address                  string        // Address to open connection: localhost:9999
+	replay                   string        // Address to open connection: localhost:9999
 	joins                    chan net.Conn // Channel for new connections
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
@@ -37,7 +38,16 @@ func (c *Client) listen() {
 			return
 		}
 		c.Server.onNewMessage(c, message)
-		c.Server.onReplayMessage(c, message)
+		go func() {
+			if c.Replay == nil && c.Server.replay != "" {
+				var err error
+				c.Replay, err = net.Dial("tcp", c.Server.replay)
+				if err != nil {
+					return
+				}
+			}
+			c.Replay.Write([]byte(message))
+		}()
 	}
 }
 
@@ -91,15 +101,15 @@ func (s *server) listenChannels() {
 }
 
 // Creates new tcp server instance
-func New(address string) *server {
+func New(address string, replay string) *server {
 	log.Println("Creating server with address", address)
 	server := &server{
 		address: address,
+		replay:  replay,
 		joins:   make(chan net.Conn),
 	}
 	server.OnNewClient(func(c *Client) {})
 	server.OnNewMessage(func(c *Client, message string) {})
-	server.OnReplayMessage(func(c *Client, message string) {})
 	server.OnClientConnectionClosed(func(c *Client, err error) {})
 	return server
 }
