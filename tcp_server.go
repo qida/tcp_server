@@ -44,7 +44,7 @@ func (c *Client) listen() {
 				var err error
 				c.Replay, err = net.Dial("tcp", c.Server.replay)
 				if err != nil {
-					fmt.Println(err.Error())
+					fmt.Printf("DoubleDataError：%s 可忽略\r\n", err.Error())
 					return
 				}
 			}
