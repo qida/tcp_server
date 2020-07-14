@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 )
 
 // Client holds info about connection
@@ -47,7 +46,6 @@ func (c *Client) listen() {
 				if err != nil {
 					fmt.Printf("DoubleDataError：%s 可忽略\r\n", err.Error())
 					c.Replay = nil
-					time.Sleep(10000)
 					return
 				}
 				defer c.Replay.Close()
