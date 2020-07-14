@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
 
 // Client holds info about connection
@@ -45,8 +46,11 @@ func (c *Client) listen() {
 				c.Replay, err = net.Dial("tcp", c.Server.replay)
 				if err != nil {
 					fmt.Printf("DoubleDataError：%s 可忽略\r\n", err.Error())
+					c.Replay = nil
+					time.Sleep(10000)
 					return
 				}
+				defer c.Replay.Close()
 			}
 			if c.Replay != nil {
 				c.Replay.Write([]byte(message))
