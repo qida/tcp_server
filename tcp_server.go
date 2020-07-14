@@ -51,7 +51,12 @@ func (c *Client) listen() {
 				defer c.Replay.Close()
 			}
 			if c.Replay != nil {
-				c.Replay.Write([]byte(message))
+				_, err = c.Replay.Write([]byte(message))
+				if err == nil {
+					fmt.Println("DoubleData发送")
+				}
+			} else {
+				fmt.Println("DoubleData已关闭")
 			}
 		}()
 	}
