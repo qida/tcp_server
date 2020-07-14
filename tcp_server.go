@@ -40,23 +40,22 @@ func (c *Client) listen() {
 		}
 		c.Server.onNewMessage(c, message)
 		go func() {
-			if c.Replay == nil && c.Server.replay != "" {
+			if c.Replay == nil {
+				if c.Server.replay == "" {
+					return
+				}
 				var err error
 				c.Replay, err = net.Dial("tcp", c.Server.replay)
 				if err != nil {
-					fmt.Printf("DoubleData连接失败可忽略：%s\r\n", err.Error())
+					fmt.Printf("DD_FAIL_IGNORE：%s\r\n", err.Error())
 					c.Replay = nil
 					return
 				}
 				defer c.Replay.Close()
 			}
-			if c.Replay != nil {
-				_, err = c.Replay.Write([]byte(message))
-				if err == nil {
-					fmt.Println("DoubleData发送")
-				}
-			} else {
-				fmt.Println("DoubleData已关闭")
+			_, err = c.Replay.Write([]byte(message))
+			if err == nil {
+				fmt.Println("DD_SUCCESS")
 			}
 		}()
 	}
