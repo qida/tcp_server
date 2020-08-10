@@ -5,27 +5,31 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/pkg/errors"
 )
 
 // Client holds info about connection
 type Client struct {
-	Id       int
-	Conn     net.Conn
-	Replay   net.Conn
-	Server   *server
-	incoming chan string // Channel for incoming data from client
+	Id     int
+	Conn   net.Conn
+	Server *server
+	// incoming chan string // Channel for incoming data from client
 }
 
 // TCP server
 type server struct {
-	clients                  []*Client
-	address                  string        // Address to open connection: localhost:9999
-	replay                   string        // Address to open connection: localhost:9999
-	joins                    chan net.Conn // Channel for new connections
+	// clients                  []*Client
+	address string        // Address to open connection: localhost:9999
+	replay  string        // Address to open connection: localhost:9999
+	joins   chan net.Conn // Channel for new connections
+
+	dd       net.Conn
+	incoming chan string // Channel for incoming data from client
+
 	onNewClientCallback      func(c *Client)
 	onClientConnectionClosed func(c *Client, err error)
 	onNewMessage             func(c *Client, message string)
-	onReplayMessage          func(c *Client, message string)
 }
 
 // Read client data from channel
@@ -40,23 +44,7 @@ func (c *Client) listen() {
 		}
 		c.Server.onNewMessage(c, message)
 		go func() {
-			if c.Replay == nil {
-				if c.Server.replay == "" {
-					return
-				}
-				var err error
-				c.Replay, err = net.Dial("tcp", c.Server.replay)
-				if err != nil {
-					fmt.Printf("DD_FAIL_IGNORE：%s\r\n", err.Error())
-					c.Replay = nil
-					return
-				}
-				defer c.Replay.Close()
-			}
-			_, err = c.Replay.Write([]byte(message))
-			if err == nil {
-				fmt.Println("DD_SUCCESS")
-			}
+			c.Server.incoming <- message
 		}()
 	}
 }
@@ -86,10 +74,6 @@ func (s *server) OnNewMessage(callback func(c *Client, message string)) {
 	s.onNewMessage = callback
 }
 
-func (s *server) OnReplayMessage(callback func(c *Client, message string)) {
-	s.onReplayMessage = callback
-}
-
 // Creates new Client instance and starts listening
 func (s *server) newClient(Conn net.Conn) {
 	client := &Client{
@@ -114,12 +98,46 @@ func (s *server) listenChannels() {
 func New(address string, replay string) *server {
 	log.Println("Creating TCP :", address)
 	server := &server{
-		address: address,
-		replay:  replay,
-		joins:   make(chan net.Conn),
+		address:  address,
+		replay:   replay,
+		joins:    make(chan net.Conn),
+		incoming: make(chan string),
 	}
+	// if replay != "" {
+	// 	var err error
+	// 	server.dd, err = net.Dial("tcp", replay)
+	// 	if err == nil {
+	// 		defer server.dd.Close()
+	// 	} else {
+	// 		fmt.Printf("DD_FAIL_IGNORE：%s\r\n", err.Error())
+	// 	}
+	// }
 	server.OnNewClient(func(c *Client) {})
 	server.OnNewMessage(func(c *Client, message string) {})
 	server.OnClientConnectionClosed(func(c *Client, err error) {})
+	go server.onSendDD()
 	return server
+}
+func (s *server) sendDb(message string) (err error) {
+	conn, err := net.Dial("tcp", s.replay)
+	if err != nil {
+		return errors.Wrap(err, "DD_LINK_FAILED.")
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(message))
+	if err != nil {
+		return errors.Wrap(err, "DD_FAILED.")
+	}
+	return
+}
+func (s *server) onSendDD() (err error) {
+	for {
+		select {
+		case msg := <-s.incoming:
+			err = s.sendDb(msg)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}
 }
